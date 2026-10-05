@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="110" fill="#c92eaa"/>
+<rect x="96" y="90" width="320" height="332" rx="38" fill="#fff5fc"/>
+<rect x="130" y="145" width="252" height="24" rx="12" fill="#d94bb5"/>
+<rect x="130" y="205" width="110" height="82" rx="18" fill="#d94bb5"/>
+<rect x="270" y="205" width="112" height="82" rx="18" fill="#d94bb5"/>
+<rect x="130" y="315" width="252" height="24" rx="12" fill="#d94bb5"/>
+<text x="256" y="268" text-anchor="middle" font-family="Arial,sans-serif" font-size="44" font-weight="700" fill="white">CB</text>
+</svg>

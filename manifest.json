@@ -1,0 +1,14 @@
+{
+  "name": "ClassBook - Class Monitoring Dashboard",
+  "short_name": "ClassBook",
+  "description": "Class schedule, bookings, reminders and class monitoring dashboard.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#f7f4f8",
+  "theme_color": "#c92eaa",
+  "icons": [
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}

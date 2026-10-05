@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#c92eaa">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ClassBook">
+<link rel="manifest" href="manifest.json">
+
+<title>Class Booking & Monitoring Dashboard</title>
+<style>
+:root{
+  --pink:#d94bb5; --light:#fff5fc; --purple:#8b5cf6; --text:#34263a;
+  --green:#43b581; --yellow:#f4b942; --red:#e56b6f; --blue:#5b8def;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f7f4f8;color:var(--text)}
+.app{display:flex;min-height:100vh;min-height:100dvh}
+html,body{width:100%;min-height:100%;overscroll-behavior:none}
+body{padding:0}
+@media (display-mode: standalone){
+  body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+}
+
+.sidebar{width:235px;background:linear-gradient(180deg,#c92eaa,#e45ac0);color:white;padding:22px 15px;position:sticky;top:0;height:100vh}
+.brand{font-size:23px;font-weight:800;margin:4px 8px 18px}
+.teacher-card{background:rgba(255,255,255,.18);border-radius:18px;padding:16px;text-align:center;margin-bottom:18px}
+.avatar{width:120px;height:120px;border-radius:50%;margin:auto;background:white;color:var(--pink);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800}
+.teacher-card h3{margin:10px 0 3px}.teacher-card p{margin:0;font-size:12px;opacity:.9}
+.nav{display:grid;gap:8px;margin-top:16px}
+.nav button{border:0;border-radius:14px;background:rgba(255,255,255,.18);color:#fff;text-align:left;padding:12px 14px;font-size:14px;cursor:pointer}
+.nav button:hover,.nav button.active{background:white;color:var(--pink)}
+.main{flex:1;padding:28px;overflow:auto;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}
+.top h1{margin:0;font-size:28px}.top p{margin:6px 0 0;color:#786d7b}
+.actions{display:flex;gap:9px}.btn{border:0;border-radius:12px;padding:11px 15px;font-weight:700;cursor:pointer}.primary{background:var(--pink);color:#fff}.secondary{background:#fff;border:1px solid #e8dce9;color:#5d4e61}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:24px 0 20px}
+.card{background:white;border:1px solid #eee4ef;border-radius:17px;padding:18px;box-shadow:0 3px 12px rgba(70,40,70,.05)}
+.card small{color:#8b7e8e}.metric{font-size:28px;font-weight:800;margin-top:8px}.metric span{font-size:12px;color:#43b581}.metric-card{cursor:pointer;transition:transform .15s,box-shadow .15s}.metric-card:hover,.metric-card:focus{transform:translateY(-2px);box-shadow:0 6px 18px rgba(70,40,70,.10);outline:none}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.calendar-head h2{margin:0;font-size:19px}
+.controls{display:flex;gap:8px;align-items:center}.controls select{padding:9px;border:1px solid #e4d9e5;border-radius:10px;background:white}.date-range{font-size:12px;color:#786d7b;margin-top:4px}
+.calendar{background:white;border:1px solid #eee4ef;border-radius:18px;overflow:auto;box-shadow:0 3px 12px rgba(70,40,70,.05)}
+.grid{display:grid;grid-template-columns:75px repeat(7,minmax(145px,1fr));min-width:1100px}
+.cell{border-right:1px solid #eee8ef;border-bottom:1px solid #eee8ef;min-height:44px;padding:7px}
+.head{background:#faf3fa;font-weight:700;text-align:center;min-height:56px}
+.time{font-size:12px;color:#8a7d8d;text-align:center;background:#fcfafc}
+.booking{border-radius:10px;padding:8px;margin:2px;font-size:12px;line-height:1.25;cursor:pointer;border-left:4px solid var(--purple);background:#f0e9ff}
+.booking.present{border-left-color:var(--green);background:#e9f8ef}.booking.cancelled{border-left-color:var(--red);background:#fdebed}.booking.upcoming{border-left-color:var(--blue);background:#eaf1ff}
+.booking strong{display:block;font-size:13px}.booking em{font-style:normal;color:#75697a}
+.legend{display:flex;gap:15px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:#6f6373}.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px}
+.bottom{display:grid;grid-template-columns:1fr;gap:18px;margin-top:20px;padding-bottom:30px}
+.panel{background:#fff;border:1px solid #eee4ef;border-radius:18px;padding:18px}
+.panel h3{margin:0 0 14px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;border-bottom:1px solid #eee8ef;text-align:left}th{color:#7c7080;font-size:12px}
+.status{padding:5px 8px;border-radius:20px;font-size:11px;font-weight:700}.status.present{background:#e7f7ed;color:#27834e}.status.booked{background:#e9f1ff;color:#3869b7}.status.cancelled{background:#fde8ea;color:#bd4148}
+.progress{height:9px;background:#eee9ef;border-radius:20px;overflow:hidden}.progress i{display:block;height:100%;background:var(--pink);border-radius:20px}
+.modal{display:none;position:fixed;inset:0;background:rgba(35,22,38,.45);align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}
+.modalbox{background:white;width:min(500px,100%);border-radius:20px;padding:22px}.modalbox h2{margin-top:0}
+.form{display:grid;gap:12px}.form label{font-size:12px;font-weight:700;color:#66586b}.form input,.form select{width:100%;padding:11px;border:1px solid #ddd2df;border-radius:10px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.editing [contenteditable="true"]{outline:2px dashed #d94bb5;outline-offset:3px;background:#fff8fd;border-radius:5px;cursor:text}
+.editing .head[contenteditable="true"]{outline:2px dashed #d94bb5}
+@media(max-width:850px){.sidebar{width:75px;padding:15px 8px}.brand,.teacher-card h3,.teacher-card p,.nav button span{display:none}.teacher-card{padding:10px}.avatar{width:48px;height:48px;font-size:18px}.main{padding:18px}.cards{grid-template-columns:repeat(2,1fr)}.bottom{grid-template-columns:1fr}}
+
+
+.editor-help{display:none;background:#fff8fd;border:1px dashed #d94bb5;border-radius:12px;padding:10px 12px;margin:-8px 0 16px;font-size:12px;color:#66586b}
+.editing .editor-help{display:block}
+.image-slot{overflow:hidden;position:relative}
+.image-slot img,.inserted-image{max-width:100%;height:auto;display:block}.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.image-slot img{width:100%;height:100%;object-fit:cover}
+.editing .image-slot{outline:2px dashed #d94bb5;cursor:pointer}
+@media(max-width:850px){.inserted-image-wrap img{max-width:160px}}\n
+.alarm-banner{display:none;background:#fff3cd;border:1px solid #f4b942;border-radius:14px;padding:12px 15px;margin-bottom:16px;font-weight:700;color:#7a5a00;box-shadow:0 3px 12px rgba(70,40,70,.05)}
+.alarm-banner.show{display:block}
+.alarm-banner small{display:block;font-weight:400;margin-top:3px}
+
+.dismiss-alarm{
+  margin-left:12px;
+  padding:9px 18px;
+  border:0;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:700;
+  background:#ffffff;
+  color:#c92a9e;
+}
+.dismiss-alarm:hover{opacity:.9;}
+
+.my-class-today{
+  margin-top:22px;
+  padding:14px 12px;
+  border-radius:16px;
+  background:rgba(255,255,255,.16);
+  color:#fff;
+}
+.my-class-today h4{
+  margin:0 0 3px;
+  font-size:16px;
+  font-weight:800;
+}
+.my-class-today .today-date{
+  font-size:11px;
+  opacity:.9;
+  margin-bottom:10px;
+}
+.today-class-item{
+  background:rgba(255,255,255,.94);
+  color:var(--text);
+  border-radius:11px;
+  padding:9px 10px;
+  margin-top:7px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+.today-class-item .class-time{
+  font-size:14px;
+  font-weight:800;
+  color:var(--pink);
+}
+.today-class-item .class-name{
+  font-size:12px;
+  font-weight:700;
+  margin-top:2px;
+}
+.today-class-item .class-type{
+  font-size:11px;
+  margin-top:2px;
+  opacity:.75;
+}
+.no-class-today{
+  font-size:12px;
+  line-height:1.4;
+  opacity:.92;
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">ClassBook</div>
+  <div class="teacher-card">
+    <div class="avatar image-slot" data-image-slot="teacher-avatar" title="Click to change picture"><img src="2020.jpg" alt="Teacher profile picture"></div>
+    <h3>Deejee Aleria</h3><p>Private Class Teacher</p>
+  </div>
+  <div class="nav">
+    <button class="active" onclick="showSection('dashboard')">📊 <span>Dashboard</span></button>
+    <button onclick="document.getElementById('bookingModal').classList.add('open')">📅 <span>Book Class</span></button>
+  </div>
+  <div class="my-class-today">
+    <h4>📚 My Class Today</h4>
+    <div class="today-date" id="sidebarTodayDate"></div>
+    <div id="sidebarTodayClasses"></div>
+  </div>
+</aside>
+
+<main class="main" id="dashboard">
+  <div class="top">
+    <div><h1>Class Monitoring Dashboard</h1><p>Manage your student bookings, attendance, and weekly schedule.</p></div>
+    <div class="actions">
+<button class="btn secondary" onclick="setToday()">Today</button>
+<button class="btn secondary" onclick="toggleEdit()">✏️ Edit Page</button>
+<button class="btn secondary" onclick="savePage()">💾 Save</button>
+<button class="btn primary" onclick="document.getElementById('bookingModal').classList.add('open')">＋ Add Booking</button>
+<button class="btn secondary" id="alarmBtn" onclick="enableClassAlarm()">🔔 Enable Alarm</button>
+
+</div>
+  </div>
+  <input id="profileImageInput" type="file" accept="image/*" style="display:none" onchange="changeProfileImage(event)">
+  <div class="editor-help">
+    <b>Edit mode:</b> Click any editable text to change it. Click the teacher picture to replace it.
+    Click <b>💾 Save</b> to keep your page changes on this browser.
+  </div>
+  <section class="cards">
+    <div class="card metric-card" role="button" tabindex="0" title="Show today's classes" onclick="goToToday()">
+      <small>Today's Classes</small>
+      <div class="metric" id="todayCount">0</div>
+      <span id="todaySubtitle">Scheduled today</span>
+    </div>
+    <div class="card metric-card" role="button" tabindex="0" title="Show total students" onclick="showStudentsFromBookings()">
+      <small>Total Students</small>
+      <div class="metric" id="studentCount">0</div>
+      <span>Active students</span>
+    </div>
+    <div class="card metric-card" role="button" tabindex="0" title="Show open slots" onclick="showOpenSlots()">
+      <small>Open Slots</small>
+      <div class="metric" id="openSlotCount">0</div>
+      <span id="openSlotSubtitle">Available bookings this week</span>
+    </div>
+  </section>
+
+  <div class="alarm-banner" id="alarmBanner"></div>
+
+  <div class="calendar-head">
+    <div><h2>Weekly Booking Schedule</h2><div class="date-range" id="dateRange"></div></div>
+    <div class="controls">
+  <select id="weekSelect" onchange="renderCalendar()"></select>
+</div>
+  </div>
+
+  <section class="calendar"><div class="grid" id="calendar"></div></section>
+  <div class="legend">
+    <span><i class="dot" style="background:#5b8def"></i>Booked</span>
+    <span>Click a booking to edit or delete it.</span>
+  </div>
+
+  <div class="bottom">
+    <section class="panel">
+      <h3>Recent Bookings</h3>
+      <table><thead><tr><th>Student</th><th>Schedule</th><th>Status</th></tr></thead>
+      <tbody id="recent"></tbody></table>
+    </section>
+
+  </div>
+
+</main>
+
+<div class="modal" id="bookingModal">
+ <div class="modalbox">
+  <h2>Book a Class</h2>
+  <div class="form">
+   <label>Student Name<input id="student" placeholder="e.g. Maria Santos"></label>
+   <div class="row"><label>Day<select id="day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select></label>
+   <label>Time<select id="time"></select></label></div>
+   <label>Class Type<input id="type" value="English Lesson"></label>
+   <div class="actions">
+  <button class="btn secondary" onclick="closeModal()">Cancel</button>
+  <button class="btn" id="deleteBookingBtn" style="display:none;background:#fde8ea;color:#bd4148" onclick="deleteBooking()">🗑️ Delete Booking</button>
+  <button class="btn primary" id="saveBookingBtn" onclick="addBooking()">Save Booking</button>
+</div>
+  </div>
+ </div>
+</div>
+
+<script>
+let editing=false;
+const editableSelectors=['.brand','.teacher-card h3','.teacher-card p','.top h1','.top p','.calendar-head h2','.card small','.card .metric','.card span','.panel h3','.panel p'];
+function toggleEdit(){
+  editing=!editing;
+  document.body.classList.toggle('editing',editing);
+
+  document.querySelectorAll(editableSelectors.join(',')).forEach(el=>{
+    if(!el.closest('.booking')) el.contentEditable=editing ? 'true' : 'false';
+  });
+  document.querySelectorAll('.head').forEach(el=>el.contentEditable=editing ? 'true' : 'false');
+
+  document.querySelectorAll('.image-slot').forEach(el=>{
+    el.onclick = editing ? ()=>document.getElementById('profileImageInput').click() : null;
+  });
+
+  const btn=document.querySelector('.top .actions .btn.secondary:nth-child(2)');
+  if(btn) btn.textContent=editing ? '✓ Finish Editing' : '✏️ Edit Page';
+}
+
+function changeProfileImage(event){
+  const file=event.target.files && event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const slot=document.querySelector('[data-image-slot="teacher-avatar"]');
+    if(slot) slot.innerHTML=`<img src="${ev.target.result}" alt="Teacher profile picture">`;
+    event.target.value='';
+  };
+  reader.readAsDataURL(file);
+}
+
+function savePage(){
+  const data={
+    text: {},
+    images: {}
+  };
+
+  document.querySelectorAll(editableSelectors.join(',' )).forEach((el,i)=>{
+    data.text[i]=el.innerHTML;
+  });
+  document.querySelectorAll('.head').forEach((el,i)=>{
+    data.text['head'+i]=el.innerHTML;
+  });
+  document.querySelectorAll('.image-slot').forEach(el=>{
+    const img=el.querySelector('img');
+    data.images[el.dataset.imageSlot]=img ? img.src : null;
+  });
+
+  localStorage.setItem('classDashboardPage',JSON.stringify(data));
+  alert('Your page text and pictures have been saved on this browser.');
+}
+
+function loadPage(){
+  const raw=localStorage.getItem('classDashboardPage');
+  if(!raw)return;
+  try{
+    const data=JSON.parse(raw);
+
+    const els=document.querySelectorAll(editableSelectors.join(','));
+    els.forEach((el,i)=>{if(data.text && data.text[i]!==undefined)el.innerHTML=data.text[i]});
+
+    document.querySelectorAll('.head').forEach((el,i)=>{
+      if(data.text && data.text['head'+i]!==undefined)el.innerHTML=data.text['head'+i];
+    });
+
+    if(data.images && data.images['teacher-avatar']){
+      const slot=document.querySelector('[data-image-slot="teacher-avatar"]');
+      if(slot) slot.innerHTML=`<img src="${data.images['teacher-avatar']}" alt="Teacher profile picture">`;
+    }
+  }catch(e){}
+}
+
+const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const times=['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00'];
+
+// Booking data
+let bookings = [
+  {day:'Monday', time:'09:00', student:'Sample Student', type:'English Lesson', status:'booked'},
+  {day:'Tuesday', time:'10:00', student:'Sample Student 2', type:'English Lesson', status:'present'},
+  {day:'Wednesday', time:'14:00', student:'Sample Student 3', type:'English Lesson', status:'booked'}
+];
+
+try{
+  const savedBookings=localStorage.getItem('classDashboardBookings');
+  if(savedBookings){
+    const parsed=JSON.parse(savedBookings);
+    if(Array.isArray(parsed)) bookings=parsed;
+  }
+}catch(e){}
+
+const scheduleStart = new Date(2026, 0, 1);  // January 1, 2026
+const scheduleEnd = new Date(2026, 11, 31); // December 31, 2026
+
+function getMonday(date){
+  const d=new Date(date);
+  d.setHours(0,0,0,0);
+  const day=d.getDay();
+  const offset=(day+6)%7;
+  d.setDate(d.getDate()-offset);
+  return d;
+}
+
+// Open the dashboard on the current Monday-Sunday week.
+let selectedWeekStart = getMonday(new Date());
+if(selectedWeekStart < getMonday(scheduleStart)) selectedWeekStart=getMonday(scheduleStart);
+if(selectedWeekStart > getMonday(scheduleEnd)) selectedWeekStart=getMonday(scheduleEnd);
+
+function populateTimeSelect(){
+  const select=document.getElementById('time');
+  if(!select)return;
+  select.innerHTML='';
+  times.forEach(t=>{
+    const option=document.createElement('option');
+    option.value=t;
+    option.textContent=t;
+    select.appendChild(option);
+  });
+}
+
+function formatDate(d){
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+function dateKey(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function dayDate(weekStart, dayIndex){
+  const d=new Date(weekStart);
+  d.setDate(d.getDate()+dayIndex);
+  return d;
+}
+
+function populateWeekSelect(){
+  const select=document.getElementById('weekSelect');
+  if(!select)return;
+  select.innerHTML='';
+  let week=getMonday(scheduleStart);
+  const lastWeek=getMonday(scheduleEnd);
+  let index=1;
+  while(week<=lastWeek){
+    const option=document.createElement('option');
+    option.value=dateKey(week);
+    const end=new Date(week);
+    end.setDate(end.getDate()+6);
+    const visibleStart=week<scheduleStart?scheduleStart:week;
+    const visibleEnd=end>scheduleEnd?scheduleEnd:end;
+    option.textContent=`Week ${index}: ${formatDate(visibleStart)} – ${formatDate(visibleEnd)}`;
+    select.appendChild(option);
+    week.setDate(week.getDate()+7);
+    index++;
+  }
+  select.value=dateKey(selectedWeekStart);
+}
+
+
+function countBookingsForDate(date){
+  const key=dateKey(date);
+  const dayName=days[date.getDay()===0 ? 6 : date.getDay()-1];
+  return bookings.filter(x =>
+    (x.date && x.date===key) ||
+    (!x.date && x.day===dayName)
+  ).length;
+}
+
+function getWeekSlotStats(){
+  const weekStart=new Date(selectedWeekStart);
+  let totalSlots=0;
+  let bookedSlots=0;
+
+  for(let i=0;i<days.length;i++){
+    const actual=dayDate(weekStart,i);
+    if(actual>scheduleEnd) continue;
+
+    totalSlots += times.length;
+    const key=dateKey(actual);
+    const dayName=days[i];
+
+    bookedSlots += bookings.filter(x =>
+      ((x.date && x.date===key) || (!x.date && x.day===dayName))
+      && times.includes(x.time)
+    ).length;
+  }
+
+  return {totalSlots, bookedSlots, openSlots:Math.max(0,totalSlots-bookedSlots)};
+}
+
+function updateMetrics(){
+  const today=new Date();
+  const todayKey=dateKey(today);
+  const todayDay=days[today.getDay()===0 ? 6 : today.getDay()-1];
+
+  // Count today's actual dated bookings, plus older weekday-only sample bookings.
+  const todayCount=bookings.filter(x =>
+    (x.date && x.date===todayKey) ||
+    (!x.date && x.day===todayDay && selectedWeekStart<=today && today<=scheduleEnd)
+  ).length;
+
+  const students=new Set(
+    bookings
+      .map(x=>(x.student||'').trim())
+      .filter(Boolean)
+      .map(name=>name.toLowerCase())
+  );
+
+  const stats=getWeekSlotStats();
+
+  const todayEl=document.getElementById('todayCount');
+  const studentEl=document.getElementById('studentCount');
+  const openEl=document.getElementById('openSlotCount');
+  const openSub=document.getElementById('openSlotSubtitle');
+
+  if(todayEl) todayEl.textContent=todayCount;
+  if(studentEl) studentEl.textContent=students.size;
+  if(openEl) openEl.textContent=stats.openSlots;
+  if(openSub) openSub.textContent=`${stats.openSlots} available in selected week`;
+}
+
+function goToToday(){
+  const now=new Date();
+  if(now<scheduleStart || now>scheduleEnd){
+    alert('Today is outside the current ClassBook schedule.');
+    return;
+  }
+
+  // The schedule uses Monday as the first day of the week.
+  const dayOffset=(now.getDay()+6)%7;
+  selectedWeekStart=new Date(now);
+  selectedWeekStart.setHours(0,0,0,0);
+  selectedWeekStart.setDate(now.getDate()-dayOffset);
+
+  // Keep within the supported schedule period.
+  if(selectedWeekStart<scheduleStart) selectedWeekStart=new Date(scheduleStart);
+
+  const select=document.getElementById('weekSelect');
+  if(select) select.value=dateKey(selectedWeekStart);
+  renderCalendar();
+  document.querySelector('.calendar')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function showStudentsFromBookings(){
+  const students=[...new Map(
+    bookings
+      .filter(x=>(x.student||'').trim())
+      .map(x=>[(x.student||'').trim().toLowerCase(),(x.student||'').trim()])
+  ).values()].sort((a,b)=>a.localeCompare(b));
+
+  if(!students.length){
+    alert('No students have been booked yet.');
+    return;
+  }
+
+  alert('Booked Students\\n\\n' + students.map((name,i)=>`${i+1}. ${name}`).join('\\n'));
+}
+
+function showOpenSlots(){
+  document.querySelector('.calendar')?.scrollIntoView({behavior:'smooth',block:'start'});
+  const stats=getWeekSlotStats();
+  alert(`Open slots for the selected week: ${stats.openSlots}\\n\\nTotal schedule slots: ${stats.totalSlots}\\nBooked slots: ${stats.bookedSlots}`);
+}
+
+function renderSidebarToday(){
+  const dateEl=document.getElementById('sidebarTodayDate');
+  const listEl=document.getElementById('sidebarTodayClasses');
+  if(!dateEl || !listEl)return;
+
+  const now=new Date();
+  dateEl.textContent=now.toLocaleDateString('en-US',{
+    weekday:'long',month:'short',day:'numeric',year:'numeric'
+  });
+
+  const todayKey=dateKey(now);
+  const todayName=days[(now.getDay()+6)%7];
+
+  let todayBookings=bookings.filter(b=>{
+    if(b.status==='cancelled')return false;
+    if(b.date)return b.date===todayKey;
+    return b.day===todayName;
+  });
+
+  todayBookings.sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+
+  if(!todayBookings.length){
+    listEl.innerHTML='<div class="no-class-today">No classes scheduled for today.</div>';
+    return;
+  }
+
+  listEl.innerHTML=todayBookings.map(b=>`
+    <div class="today-class-item">
+      <div class="class-time">⏰ ${b.time}</div>
+      <div class="class-name">👤 ${b.student || 'Student'}</div>
+      <div class="class-type">📘 ${b.type || 'Class'}</div>
+    </div>
+  `).join('');
+}
+
+function renderCalendar(){
+  const cal=document.getElementById('calendar');
+  cal.innerHTML='';
+
+  const weekStart=new Date(selectedWeekStart);
+  const weekEnd=new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate()+6);
+  const visibleEnd=weekEnd>scheduleEnd?scheduleEnd:weekEnd;
+
+  const range=document.getElementById('dateRange');
+  if(range) range.textContent=`Schedule: ${formatDate(weekStart)} – ${formatDate(visibleEnd)}`;
+
+  let h='<div class="cell head">PH Time</div>';
+  days.forEach((d,i)=>{
+    const actual=dayDate(weekStart,i);
+    if(actual>scheduleEnd){
+      h+=`<div class="cell head">${d}<br><small>—</small></div>`;
+    }else{
+      h+=`<div class="cell head">${d}<br><small>${formatDate(actual)}</small></div>`;
+    }
+  });
+  cal.innerHTML+=h;
+
+  times.forEach(t=>{
+    cal.innerHTML+=`<div class="cell time">${t}</div>`;
+    days.forEach((d,i)=>{
+      const actual=dayDate(weekStart,i);
+      if(actual>scheduleEnd){
+        cal.innerHTML+='<div class="cell"></div>';
+        return;
+      }
+
+      const key=dateKey(actual);
+      let b=bookings.filter(x=>x.date===key && x.time===t);
+
+      // Keep older sample bookings visible by matching their weekday.
+      if(!b.length){
+        b=bookings.filter(x=>!x.date && x.day===d && x.time===t);
+      }
+
+      let content=b.map((x,idx)=>{
+        const bookingIndex=bookings.indexOf(x);
+        return `<div class="booking ${x.status}" onclick="openBookingEditor(${bookingIndex})">
+          <strong>${x.student}</strong><em>${x.type} · ${x.status}</em>
+        </div>`;
+      }).join('');
+
+      cal.innerHTML+=`<div class="cell">${content}</div>`;
+    });
+  });
+
+  renderRecent();
+  updateMetrics();
+  renderSidebarToday();
+}
+
+function renderRecent(){
+ document.getElementById('recent').innerHTML=bookings.slice(-6).reverse().map(x=>`<tr><td>${x.student}</td><td>${x.date ? x.date+' · ' : ''}${x.day} · ${x.time}</td><td><span class="status ${x.status}">${x.status}</span></td></tr>`).join('');
+}
+function toggleStatus(i){
+ const order=['booked','present','cancelled'];
+ bookings[i].status=order[(order.indexOf(bookings[i].status)+1)%3];
+ localStorage.setItem('classDashboardBookings',JSON.stringify(bookings));
+ renderCalendar();
+}
+let editingBookingIndex = null;
+
+function addBooking(){
+  const studentInput=document.getElementById('student');
+  const dayInput=document.getElementById('day');
+  const timeInput=document.getElementById('time');
+  const typeInput=document.getElementById('type');
+
+  const student=studentInput.value.trim();
+  const day=dayInput.value;
+  const time=timeInput.value;
+  const type=typeInput.value.trim() || 'English Lesson';
+
+  if(!student){
+    alert('Please enter the student name.');
+    studentInput.focus();
+    return;
+  }
+
+  const dayIndex=days.indexOf(day);
+  const actualDate=dayIndex >= 0 ? dayDate(selectedWeekStart, dayIndex) : null;
+  const date=actualDate && actualDate <= scheduleEnd ? dateKey(actualDate) : '';
+
+  const duplicate=bookings.some((x,i)=>i!==editingBookingIndex && x.date===date && x.time===time);
+  if(duplicate){
+    alert('This time slot is already booked. Please choose another time.');
+    return;
+  }
+
+  if(editingBookingIndex === null){
+    bookings.push({date,day,time,student,type,status:'booked'});
+  }else{
+    bookings[editingBookingIndex]={...bookings[editingBookingIndex],date,day,time,student,type};
+  }
+
+  localStorage.setItem('classDashboardBookings',JSON.stringify(bookings));
+  resetBookingForm();
+  closeModal();
+  renderCalendar();
+}
+
+function openBookingEditor(index){
+  const b=bookings[index];
+  if(!b)return;
+
+  editingBookingIndex=index;
+  document.getElementById('student').value=b.student || '';
+  document.getElementById('day').value=b.day || 'Monday';
+  document.getElementById('time').value=b.time || times[0];
+  document.getElementById('type').value=b.type || 'English Lesson';
+
+  document.getElementById('deleteBookingBtn').style.display='inline-block';
+  document.getElementById('saveBookingBtn').textContent='Save Changes';
+  document.querySelector('#bookingModal h2').textContent='Edit Booking';
+  document.getElementById('bookingModal').classList.add('open');
+}
+
+function deleteBooking(){
+  if(editingBookingIndex === null)return;
+
+  const student=bookings[editingBookingIndex]?.student || 'this booking';
+  if(!confirm('Delete booking for ' + student + '?'))return;
+
+  bookings.splice(editingBookingIndex,1);
+  localStorage.setItem('classDashboardBookings',JSON.stringify(bookings));
+
+  resetBookingForm();
+  closeModal();
+  renderCalendar();
+}
+
+function resetBookingForm(){
+  editingBookingIndex=null;
+  document.getElementById('student').value='';
+  document.getElementById('day').value='Monday';
+  document.getElementById('time').value=times[0];
+  document.getElementById('type').value='English Lesson';
+  document.getElementById('deleteBookingBtn').style.display='none';
+  document.getElementById('saveBookingBtn').textContent='Save Booking';
+  document.querySelector('#bookingModal h2').textContent='Book a Class';
+}
+
+function closeModal(){document.getElementById('bookingModal').classList.remove('open'); editingBookingIndex=null;}
+function setToday(){alert('Today view selected. Use the week selector to switch weeks.')}
+
+// Class-time alarm: triggers exactly 10 minutes before each class.
+const CLASS_ALARM_MINUTES = 10;
+let classAlarmEnabled = false;
+const alertedClasses = new Set();
+let alarmAudioContext = null;
+let activeAlarmOscillators = [];
+
+function enableClassAlarm(){
+  classAlarmEnabled = true;
+  updateAlarmButton();
+
+  // Ask for desktop notification permission when the user enables the alarm.
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission().catch(()=>{});
+  }
+
+  // Prime the audio context from this user click so the alarm sound can play later.
+  try{
+    alarmAudioContext = alarmAudioContext || new (window.AudioContext || window.webkitAudioContext)();
+    if(alarmAudioContext.state === 'suspended') alarmAudioContext.resume();
+
+    // Immediate short test chime confirms that browser audio is working.
+    playClassAlarm();
+  }catch(e){}
+
+  checkClassAlarms();
+}
+
+function updateAlarmButton(){
+  const btn=document.getElementById('alarmBtn');
+  if(btn) btn.textContent=classAlarmEnabled ? '🔔 Sound Alarm On — 10 min early' : '🔔 Enable Alarm';
+}
+
+function getBookingDateTime(b, now){
+  let dateText=b.date;
+
+  // For older weekday-only bookings, use today's date only when the weekday matches.
+  if(!dateText){
+    const dayIndex=days.indexOf(b.day);
+    const todayIndex=(now.getDay()+6)%7;
+    if(dayIndex<0 || dayIndex!==todayIndex) return null;
+    dateText=dateKey(now);
+  }
+
+  const [h,m]=String(b.time||'').split(':').map(Number);
+  if(!Number.isFinite(h)||!Number.isFinite(m)) return null;
+
+  const d=new Date(dateText+'T00:00:00');
+  d.setHours(h,m,0,0);
+  return d;
+}
+
+function playClassAlarm(){
+  try{
+    alarmAudioContext = alarmAudioContext || new (window.AudioContext || window.webkitAudioContext)();
+    if(alarmAudioContext.state==='suspended') alarmAudioContext.resume();
+
+    // Stop any previous alarm before starting a new one.
+    stopClassAlarmSound();
+
+    const ctx=alarmAudioContext;
+    const start=ctx.currentTime + 0.05;
+    const duration=8;
+    const interval=0.45;
+
+    for(let t=0; t<duration; t+=interval){
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+
+      osc.type = (Math.floor(t/interval)%2===0) ? 'square' : 'sawtooth';
+      osc.frequency.setValueAtTime(
+        (Math.floor(t/interval)%2===0) ? 1100 : 700,
+        start+t
+      );
+
+      gain.gain.setValueAtTime(0.0001,start+t);
+      gain.gain.exponentialRampToValueAtTime(0.42,start+t+0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001,start+t+0.34);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      activeAlarmOscillators.push(osc);
+
+      osc.onended=()=>{
+        activeAlarmOscillators=activeAlarmOscillators.filter(o=>o!==osc);
+      };
+
+      osc.start(start+t);
+      osc.stop(start+t+0.36);
+    }
+  }catch(e){}
+}
+
+function stopClassAlarmSound(){
+  activeAlarmOscillators.forEach(osc=>{
+    try{ osc.stop(); }catch(e){}
+  });
+  activeAlarmOscillators=[];
+}
+
+function showClassAlarm(b){
+  const banner=document.getElementById('alarmBanner');
+  const message=`🔔 Class reminder: ${b.student || 'Student'} has ${b.type || 'class'} at ${b.time}.`;
+
+  playClassAlarm();
+
+  if(banner){
+    banner.innerHTML=`<div>${message}<small>Your class starts in 10 minutes.</small></div>
+      <button type="button" class="dismiss-alarm" onclick="dismissClassAlarm()">Dismiss</button>`;
+    banner.classList.add('show');
+  }
+
+  if('Notification' in window && Notification.permission==='granted'){
+    try{
+      new Notification('ClassBook — Class Reminder',{
+        body:`${b.student || 'Student'} · ${b.type || 'Class'} at ${b.time}. Starts in 10 minutes.`
+      });
+    }catch(e){}
+  }
+}
+
+function dismissClassAlarm(){
+  stopClassAlarmSound();
+  const banner=document.getElementById('alarmBanner');
+  if(banner) banner.classList.remove('show');
+}
+
+function checkClassAlarms(){
+  if(!classAlarmEnabled)return;
+
+  const now=new Date();
+
+  bookings.forEach((b,index)=>{
+    if(b.status==='cancelled')return;
+
+    const classTime=getBookingDateTime(b,now);
+    if(!classTime)return;
+
+    const diffMs=classTime-now;
+    const diffMinutes=diffMs/60000;
+    const key=`${index}|${dateKey(classTime)}|${b.time}`;
+
+    // Trigger during the 10-minute window before class.
+    if(diffMinutes>0 && diffMinutes<=CLASS_ALARM_MINUTES && !alertedClasses.has(key)){
+      alertedClasses.add(key);
+      showClassAlarm(b);
+    }
+  });
+}
+
+// Check every second so the 10-minute reminder is reliable.
+setInterval(checkClassAlarms,1000);
+
+function showSection(x){ if(x==='dashboard'){ renderCalendar(); } }
+document.querySelectorAll('.metric-card').forEach(card=>{
+  card.addEventListener('keydown',function(e){
+    if(e.key==='Enter' || e.key===' '){
+      e.preventDefault();
+      card.click();
+    }
+  });
+});
+populateTimeSelect();
+populateWeekSelect();
+document.getElementById('weekSelect').addEventListener('change',function(){
+  selectedWeekStart=new Date(this.value+'T00:00:00');
+  renderCalendar();
+});
+renderCalendar();
+renderSidebarToday();
+loadPage();
+updateMetrics();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
